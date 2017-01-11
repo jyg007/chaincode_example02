@@ -100,6 +100,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	}
 	Aval, _ = strconv.Atoi(string(Avalbytes))
 
+	        fmt.Printf("Step0")
 	Bvalbytes, err := stub.GetState(B)
 	if err != nil {
 	        fmt.Printf("Step1")
