@@ -104,17 +104,16 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	Bvalbytes, err := stub.GetState(B)
 	if err != nil {
 	
-		Bvalbytes=[]byte("100")
 		
-	//	return nil, errors.New("Failed to get state")
+		return nil, errors.New("Failed to get state")
 	}
 	if Bvalbytes == nil {
-		return nil, errors.New("Entity not foud")
-	}
-	        fmt.Printf("Step3")
-	Bval, _ = strconv.Atoi(string(Bvalbytes))
-	        fmt.Printf("Step3")
+		Bvalbytes=[]byte("0")
 
+	  //return nil, errors.New("Entity not foud")
+	}
+	 Bval, _ = strconv.Atoi(string(Bvalbytes))
+	 
 	// Perform the execution
 	X, err = strconv.Atoi(args[2])
 	if err != nil {
