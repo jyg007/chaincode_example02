@@ -103,7 +103,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	Bvalbytes, err := stub.GetState(B)
 	if err != nil {
 		err = stub.PutState(B, []byte("0"))
-		Bvalbytes, err := stub.GetState(B)
+		Bvalbytes, err = stub.GetState(B)
 	//	return nil, errors.New("Failed to get state")
 	}
 	if Bvalbytes == nil {
