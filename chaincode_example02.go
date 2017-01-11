@@ -111,7 +111,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	//	return nil, errors.New("Failed to get state")
 	}
 	if Bvalbytes == nil {
-		return nil, errors.New("Entity not found")
+		return nil, errors.New("Entity not fond")
 	}
 	        fmt.Printf("Step3")
 	Bval, _ = strconv.Atoi(string(Bvalbytes))
