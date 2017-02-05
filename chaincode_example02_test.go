@@ -99,12 +99,14 @@ func TestExample02_Invoke(t *testing.T) {
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_JYG"), []byte("2000")})
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_KARINE"), []byte("1000")})
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_FABIEN"), []byte("100000")})
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_ESTELLE"), []byte("200")})
 
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG"), []byte("COMPTE_KARINE"), []byte("10")})
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG"), []byte("COMPTE_KARINE"), []byte("2")})
 
 	
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG"), []byte("COMPTE_KARINE"), []byte("1100")})
+        checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_ESTELLE"), []byte("COMPTE_KARINE"), []byte("300")})
 
 	checkQuery(t, stub, "COMPTE_JYG")
 	checkQuery2(t, stub, "queryplafond", "COMPTE_JYG")

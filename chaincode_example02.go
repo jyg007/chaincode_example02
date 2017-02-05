@@ -166,6 +166,10 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 	Aval = Aval - X
 	Bval = Bval + X
 
+	if Aval < 0  {
+	      return shim.Error("Insufficient funds in debit account")
+	}
+	
 	
 	fmt.Printf("Aval = %d, Bval = %d, Mval= %d\n", Aval, Bval,Mval)
 
