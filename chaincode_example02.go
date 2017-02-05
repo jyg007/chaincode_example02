@@ -236,8 +236,8 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface,args []string) 
 	}
 
 	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
-	fmt.Printf("Query Response:%s\n", jsonResp)
-	return shim.Success(Avalbytes)
+	//fmt.Printf("Query Response:%s\n", jsonResp)
+	return shim.Success([]byte(jsonResp))
 }
 
 
@@ -265,9 +265,9 @@ func (t *SimpleChaincode) queryplafond(stub shim.ChaincodeStubInterface,args []s
 		return shim.Error(jsonResp)
 	}
 
-	jsonResp := "{\"Name\":\"" + A + "\",\"Total Fund Transfer till now\":\"" + string(Avalbytes) + "\"}"
-	fmt.Printf("Query Response:%s\n", jsonResp)
-	return shim.Success(Avalbytes)
+	jsonResp := "{\"Name\":\"" + args[0] + "\",\"Total FT\":\"" + string(Avalbytes) + "\"}"
+	//fmt.Printf("Query Response:%s\n", jsonResp)
+	return shim.Success([]byte(jsonResp))
 }
 
 

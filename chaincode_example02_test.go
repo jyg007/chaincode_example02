@@ -52,7 +52,7 @@ func checkQuery(t *testing.T, stub *shim.MockStub, name string) {
 		fmt.Println("Query", name, "failed to get value")
 		t.FailNow()
 	}
-//	fmt.Println(string(res.Payload))  
+	fmt.Println(string(res.Payload))  
 }
 
 func checkQuery2(t *testing.T, stub *shim.MockStub, fonc string, value string) {
@@ -65,7 +65,7 @@ func checkQuery2(t *testing.T, stub *shim.MockStub, fonc string, value string) {
 		fmt.Println("Query", fonc, "failed to get value")
 		t.FailNow()
 	}
-	//fmt.Println(string(res.Payload))
+	fmt.Println(string(res.Payload))
 }
 
 func checkInvoke(t *testing.T, stub *shim.MockStub, args [][]byte) {
