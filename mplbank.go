@@ -64,6 +64,11 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	if err != nil {
 		return shim.Error(err.Error());
 	}
+	
+	err = stub.PutState(A+"_DAY", []byte("0"))
+	if err != nil {
+		return shim.Error(err.Error());
+	}
 
 	return shim.Success(nil)
 }
@@ -72,6 +77,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	fmt.Println("ex02 Invoke")
 	function, args := stub.GetFunctionAndParameters()
+	fmt.Println(function)
 	if function == "invoke" {
 		// Make payment of X units from A to B
 		return t.invoke(stub, args)
@@ -84,6 +90,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	} else if function == "queryplafond" {
 		// the old "Query" is now implemtned in invoke
 		return t.queryplafond(stub, args)
+	} else if function == "changeday" {
+		// the old "Query" is now implemtned in invoke
+		return t.changeday(stub)
 	}
 
 
@@ -95,7 +104,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string) pb.Response {
 
 	var A, B, M string    // Entities
-	var Aval, Bval, Mval int // Asset holdings
+	var MPLday, Aday, Aval, Bval, Mval int // Asset holdings
 	var X int          // Transaction value
 	var err error
 
@@ -125,16 +134,38 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 	}
 	Aval, _ = strconv.Atoi(string(Avalbytes))
 
+	
+	Adaybytes, err := stub.GetState(A+"_DAY")
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	Aday, _ = strconv.Atoi(string(Adaybytes))
+
+	MPLdaybytes, err := stub.GetState("MPLBANK_DAY")
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	MPLday, _ = strconv.Atoi(string(MPLdaybytes))
+	
+	if (Aday == MPLday) {
+	    Mvalbytes, err := stub.GetState(M)
+	    if err != nil {
+		return shim.Error("Failed to get state for M")
+	    }	
+	    Mval, _ = strconv.Atoi(string(Mvalbytes))
+	} else {
+	    Mval = 0
+	    err = stub.PutState(A+"_DAY", MPLdaybytes)
+	    if err != nil {
+		  return shim.Error("PutStat Failed")
+	    }
+	}
+	
 	Bvalbytes, err := stub.GetState(B)
 	if err != nil {
 		return shim.Error("Failed to get state B")
 	}
 	
-	Mvalbytes, err := stub.GetState(M)
-	if err != nil {
-		return shim.Error("Failed to get state for M")
-	}	
-	Mval, _ = strconv.Atoi(string(Mvalbytes))
 	
 	if Bvalbytes == nil {
 		fmt.Printf("ouverture de compte %s\n", B)
@@ -143,6 +174,10 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 		};
 		Bvalbytes=[]byte("0")
 	        //return shim.Error("Entity not foud")
+		err = stub.PutState(B+"_DAY", []byte("0"))
+		if err != nil {
+		      return shim.Error("PutState failed")
+		}
 
 	}
 		
@@ -170,10 +205,7 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 	      return shim.Error("Insufficient funds in debit account")
 	}
 	
-	
 	fmt.Printf("Aval = %d, Bval = %d, Mval= %d\n", Aval, Bval,Mval)
-
-	
 	
 	// Write the state back to the ledger
 	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
@@ -214,6 +246,30 @@ func (t *SimpleChaincode) delete(stub shim.ChaincodeStubInterface, args []string
 
 	return shim.Success(nil)
 }
+
+// Deletes an entity from state
+func (t *SimpleChaincode) changeday(stub shim.ChaincodeStubInterface) pb.Response {
+	var  err error
+	var MPLday int
+	
+	fmt.Println("coucou")
+	
+	MPLdaybytes, err := stub.GetState("MPLBANK_DAY")
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	MPLday, _ = strconv.Atoi(string(MPLdaybytes))
+	MPLday++
+	
+	err = stub.PutState("MPLBANK_DAY", []byte(strconv.Itoa(MPLday)))
+	if err != nil {
+		return shim.Error(err.Error());
+	}	
+
+	return shim.Success([]byte(string(MPLday)))
+}
+
+
 
 // Query callback representing the query of a chaincode
 func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface,args []string) pb.Response {
