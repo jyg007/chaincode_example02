@@ -100,7 +100,8 @@ func TestExample02_Invoke(t *testing.T) {
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_KARINE"), []byte("1000")})
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_FABIEN"), []byte("100000")})
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_ESTELLE"), []byte("200")})
-
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_JYG2"), []byte("10000")})
+	
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG"), []byte("COMPTE_KARINE"), []byte("10")})
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG"), []byte("COMPTE_KARINE"), []byte("2")})
 
@@ -108,13 +109,22 @@ func TestExample02_Invoke(t *testing.T) {
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG"), []byte("COMPTE_KARINE"), []byte("1100")})
         checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_ESTELLE"), []byte("COMPTE_KARINE"), []byte("300")})
 
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
+	checkInvoke(t, stub, [][]byte{[]byte("changeday")})
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
+	
+	
+	
 	checkQuery(t, stub, "COMPTE_JYG")
+	checkQuery(t, stub, "COMPTE_JYG2")
 	checkQuery2(t, stub, "queryplafond", "COMPTE_JYG")
 	
 	checkQuery(t, stub, "COMPTE_KARINE")
 
 	// Invoke B->A for 234
-	//checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("B"), []byte("A"), []byte("234")})
+	//checkInvoke(t, stub, [][]bytge{[]byte("invoke"), []byte("B"), []byte("A"), []byte("234")})
 	//checkQuery(t, stub, "A", "678")
 	//checkQuery(t, stub, "B", "567")
 	//checkQuery(t, stub, "A", "678")
@@ -128,8 +138,15 @@ func TestExample02_Query(t *testing.T) {
 
 	// Init A=345 B=456
 	checkInit(t, stub, [][]byte{[]byte("init"), []byte("MPLBANK"), []byte("900000000")})
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_JYG2"), []byte("10000")})
+	
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
 
-	// Query A
-	checkQuery(t, stub, "A")
+	checkInvoke(t, stub, [][]byte{[]byte("changeday")})
+	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
+	checkQuery(t, stub, "COMPTE_JYG2")
+	checkQuery(t, stub, "COMPTE_KARINE")
 
 }
