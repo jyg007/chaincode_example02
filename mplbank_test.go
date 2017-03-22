@@ -123,6 +123,10 @@ func TestExample02_Invoke(t *testing.T) {
 	
 	checkQuery(t, stub, "COMPTE_KARINE")
 
+	checkInvoke(t, stub, [][]byte{[]byte("getaccounts")})
+
+
+
 	// Invoke B->A for 234
 	//checkInvoke(t, stub, [][]bytge{[]byte("invoke"), []byte("B"), []byte("A"), []byte("234")})
 	//checkQuery(t, stub, "A", "678")

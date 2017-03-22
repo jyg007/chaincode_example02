@@ -25,6 +25,8 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"bytes"
+	"regexp"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	 pb "github.com/hyperledger/fabric/protos/peer"
@@ -93,6 +95,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	} else if function == "changeday" {
 		// the old "Query" is now implemtned in invoke
 		return t.changeday(stub)
+	} else if function == "getaccounts" {
+		// the old "Query" is now implemtned in invoke
+		return t.getaccounts(stub)
 	}
 
 
@@ -269,6 +274,54 @@ func (t *SimpleChaincode) changeday(stub shim.ChaincodeStubInterface) pb.Respons
 	return shim.Success([]byte(string(MPLday)))
 }
 
+
+func (t *SimpleChaincode) getaccounts(stub shim.ChaincodeStubInterface) pb.Response {
+
+
+
+	resultsIterator, err := stub.GetStateByRange("\"", "}")
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	defer resultsIterator.Close()
+
+	match, _ := regexp.Compile("_DAY$|_OUTTOT@|MPLBANK")
+
+	// buffer is a JSON array containing QueryResults
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+
+	bArrayMemberAlreadyWritten := false
+	for resultsIterator.HasNext() {
+	//	queryResultKey, queryResultValue, err := resultsIterator.Next()
+		queryResultKey, _ , err := resultsIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		if (!match.MatchString(queryResultKey)) {
+		// Add a comma before array members, suppress it for the first array member
+		if bArrayMemberAlreadyWritten == true {
+			buffer.WriteString(",")
+		}
+	//	buffer.WriteString("{\"Key\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(queryResultKey)
+		buffer.WriteString("\"")
+
+	//	buffer.WriteString(", \"Record\":")
+		// Record is a JSON object, so we write as-is
+	//	buffer.WriteString(string(queryResultValue))
+	//	buffer.WriteString("}")
+		bArrayMemberAlreadyWritten = true
+		}
+	}
+	buffer.WriteString("]")
+
+	fmt.Printf("-  queryResult:\n%s\n", buffer.String())
+
+	return shim.Success(buffer.Bytes())
+}
 
 
 // Query callback representing the query of a chaincode
