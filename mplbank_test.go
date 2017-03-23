@@ -126,7 +126,10 @@ func TestExample02_Invoke(t *testing.T) {
 	checkInvoke(t, stub, [][]byte{[]byte("getaccounts")})
 
 
-
+    creator, err  := stub.GetCreator()
+    if err == nil {
+    	fmt.Println("=>"+string(creator))
+    }
 	// Invoke B->A for 234
 	//checkInvoke(t, stub, [][]bytge{[]byte("invoke"), []byte("B"), []byte("A"), []byte("234")})
 	//checkQuery(t, stub, "A", "678")

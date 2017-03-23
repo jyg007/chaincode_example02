@@ -27,6 +27,8 @@ import (
 	"strconv"
 	"bytes"
 	"regexp"
+	"crypto/x509"
+    "encoding/pem"
 
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 	 pb "github.com/hyperledger/fabric/protos/peer"
@@ -80,6 +82,21 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	fmt.Println("ex02 Invoke")
 	function, args := stub.GetFunctionAndParameters()
 	fmt.Println(function)
+
+
+    creator, err  := stub.GetCreator()
+    if err != nil {
+    	block, _ := pem.Decode([]byte(creator))
+    	fmt.Println("failed to parse certificate PEM")
+    
+    	cert, err := x509.ParseCertificate(block.Bytes)
+    	if err != nil {
+    		fmt.Println("failed to parse certificate: " + err.Error())
+    	}
+    	fmt.Println(cert.Subject.CommonName)
+    }
+
+
 	if function == "invoke" {
 		// Make payment of X units from A to B
 		return t.invoke(stub, args)
