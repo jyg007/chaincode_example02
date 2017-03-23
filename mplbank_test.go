@@ -81,7 +81,7 @@ func TestExample02_Init(t *testing.T) {
 	stub := shim.NewMockStub("ex02", scc)
 
 	// Init A=123 B=234
-	checkInit(t, stub, [][]byte{[]byte("init"), []byte("MPLBANK"), []byte("9000000000")})
+	checkInit(t, stub, [][]byte{[]byte("init"), []byte("9000000000")})
 
 	checkState(t, stub, "MPLBANK", "9000000000")
 }
@@ -93,7 +93,7 @@ func TestExample02_Invoke(t *testing.T) {
 	stub := shim.NewMockStub("ex02", scc)
 
 	// Init A=567 B=678
-	checkInit(t, stub, [][]byte{[]byte("init"), []byte("MPLBANK"), []byte("900000000")})
+	checkInit(t, stub, [][]byte{[]byte("init"), []byte("900000000")})
 
 	// Invoke A->B for 123
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_JYG"), []byte("2000")})
@@ -107,7 +107,7 @@ func TestExample02_Invoke(t *testing.T) {
 
 	
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG"), []byte("COMPTE_KARINE"), []byte("1100")})
-        checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_ESTELLE"), []byte("COMPTE_KARINE"), []byte("300")})
+    checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_ESTELLE"), []byte("COMPTE_KARINE"), []byte("300")})
 
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})
@@ -126,10 +126,7 @@ func TestExample02_Invoke(t *testing.T) {
 	checkInvoke(t, stub, [][]byte{[]byte("getaccounts")})
 
 
-    creator, err  := stub.GetCreator()
-    if err == nil {
-    	fmt.Println("=>"+string(creator))
-    }
+  
 	// Invoke B->A for 234
 	//checkInvoke(t, stub, [][]bytge{[]byte("invoke"), []byte("B"), []byte("A"), []byte("234")})
 	//checkQuery(t, stub, "A", "678")
@@ -144,7 +141,7 @@ func TestExample02_Query(t *testing.T) {
 	stub := shim.NewMockStub("ex02", scc)
 
 	// Init A=345 B=456
-	checkInit(t, stub, [][]byte{[]byte("init"), []byte("MPLBANK"), []byte("900000000")})
+	checkInit(t, stub, [][]byte{[]byte("init"),  []byte("900000000")})
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("MPLBANK"), []byte("COMPTE_JYG2"), []byte("10000")})
 	
 	checkInvoke(t, stub, [][]byte{[]byte("invoke"), []byte("COMPTE_JYG2"), []byte("COMPTE_KARINE"), []byte("400")})

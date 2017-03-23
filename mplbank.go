@@ -25,6 +25,7 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"encoding/json"
 	"bytes"
 	"regexp"
 	"crypto/x509"
@@ -38,44 +39,51 @@ import (
 type SimpleChaincode struct {
 }
 
+
+type account struct {
+//	ObjectType string `json:"docType"` //docType is used to distinguish the various types of objects in state database
+	Name       		  string `json:"name"`    //the fieldtags are needed to keep case from bouncing around
+    CurrentBalance    uint64 `json:"currentbalance"`
+	TotalForDay       uint64 `json:"totalforday"`
+	CurrentDay        uint64 `json:"currentday"`
+	Owner             string `json:"owner"`
+}
+
+
 func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	
   	_, args := stub.GetFunctionAndParameters()
-        var A,M string    // Entities
-	var Aval int // Asset holdings
+    
+
 	var err error
 
-	if len(args) != 2 {
-		return shim.Error("Incorrect number of arguments. Expecting 2")
+	if len(args) != 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
 	}
 
-	// Initialize the chaincode
-	A = args[0]
-	Aval, err = strconv.Atoi(args[1])
-	if err != nil {
-		return shim.Error("Expecting integer value for asset holding")
-	}
-	//fmt.Printf("Aval = %d, Bval = %d\n", Aval)
+	// Creation of MPLBANK
+	i, _ := strconv.ParseUint(args[0],10,64)
+    bank := &account { "MPLBANK", i , 0, 0,  "jyg" }
 
-	M = A+"_OUTTOT@"
-	
-	// Write the state to the ledger
-	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
+    bankJSONasBytes, err := json.Marshal(bank)
 	if err != nil {
-		return shim.Error(err.Error());
+		return shim.Error(err.Error())
 	}
-	err = stub.PutState(M, []byte("0"))
+
+    err = stub.PutState("MPLBANK", bankJSONasBytes)
 	if err != nil {
-		return shim.Error(err.Error());
+		return shim.Error(err.Error())
 	}
-	
-	err = stub.PutState(A+"_DAY", []byte("0"))
+    
+    err = stub.PutState("MPLBANK_DAY", []byte("0"))
 	if err != nil {
-		return shim.Error(err.Error());
+		return shim.Error(err.Error())
 	}
+    
 
 	return shim.Success(nil)
 }
+
 
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
@@ -83,19 +91,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	function, args := stub.GetFunctionAndParameters()
 	fmt.Println(function)
 
-
-    creator, err  := stub.GetCreator()
-    if err != nil {
-    	block, _ := pem.Decode([]byte(creator))
-    	fmt.Println("failed to parse certificate PEM")
-    
-    	cert, err := x509.ParseCertificate(block.Bytes)
-    	if err != nil {
-    		fmt.Println("failed to parse certificate: " + err.Error())
-    	}
-    	fmt.Println(cert.Subject.CommonName)
-    }
-
+ 
 
 	if function == "invoke" {
 		// Make payment of X units from A to B
@@ -122,12 +118,12 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 }
 
 
+
 // Transaction makes payment of X units from A to B
 func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string) pb.Response {
 
-	var A, B, M string    // Entities
-	var MPLday, Aday, Aval, Bval, Mval int // Asset holdings
-	var X int          // Transaction value
+
+	var X uint64          // Transaction value
 	var err error
 
 
@@ -135,118 +131,132 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 		return shim.Error("Incorrect number of arguments. Expecting 3")
 	}
 
-	A = args[0]
-	B = args[1]
-	M = A+"_OUTTOT@"
+    var DebitAccount, CreditAccount account
+
+   var requester string
+
+    creator, err  := stub.GetCreator()
+    if err != nil {
+    	block, _ := pem.Decode([]byte(creator))
+    	fmt.Println("failed to parse certificate PEM")
+    
+    	cert, err := x509.ParseCertificate(block.Bytes)
+    	if err != nil {
+    		fmt.Println("failed to parse certificate: " + err.Error())
+    	}
+    	fmt.Println(cert.Subject.CommonName)
+    	requester = cert.Subject.CommonName
+    }
+
+
+  
 	
 	// Perform the execution
-	X, err = strconv.Atoi(args[2])
+	X, err = strconv.ParseUint(args[2],10,64)
 	if err != nil {
 		return shim.Error("Invalid transaction amount, expecting a integer value")
 	}
 
+
 	// Get the state from the ledger
 	// TODO: will be nice to have a GetAllState call to ledger
-	Avalbytes, err := stub.GetState(A)
+	DebitAccountbytes, err := stub.GetState(args[0])
 	if err != nil {
-		return shim.Error("Failed to get state")
+		return shim.Error("Failed to get state for debut account")
 	}
-	if Avalbytes == nil {
+	if DebitAccountbytes == nil {
 		return shim.Error("Entity not found")
 	}
-	Aval, _ = strconv.Atoi(string(Avalbytes))
 
-	
-	Adaybytes, err := stub.GetState(A+"_DAY")
+    err = json.Unmarshal([]byte(DebitAccountbytes), &DebitAccount)
 	if err != nil {
-		return shim.Error("Failed to get state")
+		jsonResp := "{\"Error\":\"Failed to decode JSON of: " + args[0] + "\"}"
+		return shim.Error(jsonResp)
 	}
-	Aday, _ = strconv.Atoi(string(Adaybytes))
+	
+
+    if (DebitAccount.Name != "MPLBANK")  {
+    	if (DebitAccount.Owner != requester) {
+    		return shim.Error("Sorry but you are not the owner of this account.  Transaction cancelled")
+    	}
+    } 
+
+
 
 	MPLdaybytes, err := stub.GetState("MPLBANK_DAY")
 	if err != nil {
 		return shim.Error("Failed to get state")
 	}
-	MPLday, _ = strconv.Atoi(string(MPLdaybytes))
+	MPLday, _ := strconv.ParseUint(string(MPLdaybytes),10,64)
 	
-	if (Aday == MPLday) {
-	    Mvalbytes, err := stub.GetState(M)
-	    if err != nil {
-		return shim.Error("Failed to get state for M")
-	    }	
-	    Mval, _ = strconv.Atoi(string(Mvalbytes))
-	} else {
-	    Mval = 0
-	    err = stub.PutState(A+"_DAY", MPLdaybytes)
-	    if err != nil {
-		  return shim.Error("PutStat Failed")
-	    }
+
+	if (DebitAccount.CurrentDay != MPLday) {
+		DebitAccount.TotalForDay = 0
 	}
 	
-	Bvalbytes, err := stub.GetState(B)
+
+
+	
+
+	CreditAccountbytes, err := stub.GetState(args[1])
 	if err != nil {
-		return shim.Error("Failed to get state B")
+		return shim.Error("Failed to get state for debut account")
 	}
-	
-	
-	if Bvalbytes == nil {
-		fmt.Printf("ouverture de compte %s\n", B)
+
+	if CreditAccountbytes == nil {
+		fmt.Printf("ouverture de compte %s\n", args[1])
 		if ( X > 10000 ) {
 		       return shim.Error("Montant demandé trop important")
 		};
-		Bvalbytes=[]byte("0")
-	        //return shim.Error("Entity not foud")
-		err = stub.PutState(B+"_DAY", []byte("0"))
-		if err != nil {
-		      return shim.Error("PutState failed")
-		}
 
+        // jyg à remplacer par creator
+	    CreditAccount = account { args[1], 0, 0, MPLday, requester }
+
+	} else {
+    	err = json.Unmarshal([]byte(CreditAccountbytes), &CreditAccount)
+		if err != nil {
+			jsonResp := "{\"Error\":\"Failed to decode JSON of: " + args[1] + "\"}"
+			return shim.Error(jsonResp)
+		}
 	}
 		
-	Bval, _ = strconv.Atoi(string(Bvalbytes))
 
-	
-	Mval = Mval + X
-	if (Mval > 1000) && (A != "MPLBANK" ) {
+	if (DebitAccount.TotalForDay + X > 1000) && (DebitAccount.Name != "MPLBANK" ) {
 	       return shim.Error("Total amount for fund transfer is superior to 1000")
 	};
 
-	if (Bval==0) {
-	      // dans le cadre d une creation de compte
-	      err = stub.PutState(B+"_OUTTOT@", []byte("0"))
-	      if err != nil {
-		      return shim.Error("PutStat Failed")
-	      }
-	};
-	
-	
-	Aval = Aval - X
-	Bval = Bval + X
-
-	if Aval < 0  {
+	if X > DebitAccount.CurrentBalance   {
 	      return shim.Error("Insufficient funds in debit account")
 	}
+
+	DebitAccount.TotalForDay = DebitAccount.TotalForDay + X
+	DebitAccount.CurrentBalance = DebitAccount.CurrentBalance - X
+	CreditAccount.CurrentBalance = CreditAccount.CurrentBalance + X
+
 	
-	fmt.Printf("Aval = %d, Bval = %d, Mval= %d\n", Aval, Bval,Mval)
+	fmt.Printf("DebitNewBalance = %d, CreditNewBalance = %d, TotalTransferForTheDay = %d\n",DebitAccount.CurrentBalance , CreditAccount.CurrentBalance, DebitAccount.TotalForDay)
 	
+
+    DebitAccountbytes, err = json.Marshal(DebitAccount)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+    CreditAccountbytes, err = json.Marshal(CreditAccount)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+
+
 	// Write the state back to the ledger
-	err = stub.PutState(A, []byte(strconv.Itoa(Aval)))
+	err = stub.PutState(DebitAccount.Name, DebitAccountbytes)
 	if err != nil {
-		return shim.Error("PutState failed")
+		return shim.Error("PutState Debit Account failed")
 	}
 
-	err = stub.PutState(B, []byte(strconv.Itoa(Bval)))
+    err = stub.PutState(CreditAccount.Name, CreditAccountbytes)
 	if err != nil {
-		return shim.Error("PutStat Failed")
+		return shim.Error("PutState Credit Account failed")
 	}
-
-	err = stub.PutState(M, []byte(strconv.Itoa(Mval)))
-	if err != nil {
-		return shim.Error(err.Error());
-	}
-
-	
-	
 	
 	
 	return shim.Success(nil)
@@ -274,7 +284,7 @@ func (t *SimpleChaincode) changeday(stub shim.ChaincodeStubInterface) pb.Respons
 	var  err error
 	var MPLday int
 	
-	fmt.Println("coucou")
+	//fmt.Println("coucou")
 	
 	MPLdaybytes, err := stub.GetState("MPLBANK_DAY")
 	if err != nil {
@@ -292,9 +302,8 @@ func (t *SimpleChaincode) changeday(stub shim.ChaincodeStubInterface) pb.Respons
 }
 
 
+
 func (t *SimpleChaincode) getaccounts(stub shim.ChaincodeStubInterface) pb.Response {
-
-
 
 	resultsIterator, err := stub.GetStateByRange("\"", "}")
 	if err != nil {
@@ -302,7 +311,7 @@ func (t *SimpleChaincode) getaccounts(stub shim.ChaincodeStubInterface) pb.Respo
 	}
 	defer resultsIterator.Close()
 
-	match, _ := regexp.Compile("_DAY$|_OUTTOT@|MPLBANK")
+	match, _ := regexp.Compile("MPLBANK")
 
 	// buffer is a JSON array containing QueryResults
 	var buffer bytes.Buffer
@@ -344,28 +353,32 @@ func (t *SimpleChaincode) getaccounts(stub shim.ChaincodeStubInterface) pb.Respo
 // Query callback representing the query of a chaincode
 func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface,args []string) pb.Response {
 
-	var A string // Entities
+	var acc account // Entities
 	var err error
 
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting name of the person to query")
 	}
 
-	A = args[0]
 
 	// Get the state from the ledger
-	Avalbytes, err := stub.GetState(A)
+	// TODO: will be nice to have a GetAllState call to ledger
+	Accountbytes, err := stub.GetState(args[0])
 	if err != nil {
-		jsonResp := "{\"Error\":\"Failed to get state for " + A + "\"}"
+		return shim.Error("Failed to get state for debut account")
+	}
+	if Accountbytes == nil {
+		return shim.Error("Entity not found")
+	}
+
+    err = json.Unmarshal([]byte(Accountbytes), &acc)
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to decode JSON of: " + args[0] + "\"}"
 		return shim.Error(jsonResp)
 	}
 
-	if Avalbytes == nil {
-		jsonResp := "{\"Error\":\"Nil amount for " + A + "\"}"
-		return shim.Error(jsonResp)
-	}
-
-	jsonResp := "{\"Name\":\"" + A + "\",\"Amount\":\"" + string(Avalbytes) + "\"}"
+    i := strconv.FormatUint(acc.CurrentBalance,10)
+	jsonResp := "{\"Name\":\"" + acc.Name + "\",\"Amount\":\"" + i + "\"}"
 	//fmt.Printf("Query Response:%s\n", jsonResp)
 	return shim.Success([]byte(jsonResp))
 }
@@ -373,29 +386,44 @@ func (t *SimpleChaincode) query(stub shim.ChaincodeStubInterface,args []string) 
 
 // Query callback representing the query of a chaincode
 func (t *SimpleChaincode) queryplafond(stub shim.ChaincodeStubInterface,args []string) pb.Response {
-
-	var A string // Entities
+	var acc account // Entities
 	var err error
 
 	if len(args) != 1 {
 		return shim.Error("Incorrect number of arguments. Expecting name of the person to query")
 	}
 
-	A = args[0]+"_OUTTOT@"
 
 	// Get the state from the ledger
-	Avalbytes, err := stub.GetState(A)
+	// TODO: will be nice to have a GetAllState call to ledger
+	Accountbytes, err := stub.GetState(args[0])
 	if err != nil {
-		jsonResp := "{\"Error\":\"Failed to get state for " + A + "\"}"
+		return shim.Error("Failed to get state for debut account")
+	}
+	if Accountbytes == nil {
+		return shim.Error("Entity not found")
+	}
+
+    err = json.Unmarshal([]byte(Accountbytes), &acc)
+	if err != nil {
+		jsonResp := "{\"Error\":\"Failed to decode JSON of: " + args[0] + "\"}"
 		return shim.Error(jsonResp)
 	}
 
-	if Avalbytes == nil {
-		jsonResp := "{\"Error\":\"Nil amount for " + A + "\"}"
-		return shim.Error(jsonResp)
-	}
 
-	jsonResp := "{\"Name\":\"" + args[0] + "\",\"Total FT\":\"" + string(Avalbytes) + "\"}"
+	MPLdaybytes, err := stub.GetState("MPLBANK_DAY")
+	if err != nil {
+		return shim.Error("Failed to get state")
+	}
+	MPLday, _ := strconv.ParseUint(string(MPLdaybytes),10,64)
+	
+
+	if (acc.CurrentDay != MPLday) {
+		acc.TotalForDay = 0
+	}
+	
+	i := strconv.FormatUint(acc.TotalForDay,10)
+	jsonResp := "{\"Name\":\"" + args[0] + "\",\"Total FT\":\"" + i + "\"}"
 	//fmt.Printf("Query Response:%s\n", jsonResp)
 	return shim.Success([]byte(jsonResp))
 }
