@@ -1,5 +1,5 @@
 /*
-Copyright IBM Corp. 2016 All Rights Reserved.
+Copyright IBM Corp. 2017 All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,11 +16,6 @@ limitations under the License.
 
 package main
 
-//WARNING - this chaincode's ID is hard-coded in chaincode_example04 to illustrate one way of
-//calling chaincode from a chaincode. If this example is modified, chaincode_example04.go has
-//to be modified as well with the new ID of chaincode_example02.
-//chaincode_example05 show's how chaincode ID can be passed in as a parameter instead of
-//hard-coding.
 
 import (
 	"fmt"
@@ -38,7 +33,6 @@ import (
 // SimpleChaincode example simple Chaincode implementation
 type SimpleChaincode struct {
 }
-
 
 type account struct {
 //	ObjectType string `json:"docType"` //docType is used to distinguish the various types of objects in state database
@@ -73,7 +67,9 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-    
+  
+
+
     err = stub.PutState("MPLBANK_DAY", []byte("0"))
 	if err != nil {
 		return shim.Error(err.Error())
@@ -85,11 +81,9 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	fmt.Println("ex02 Invoke")
+	//fmt.Println("ex02 Invoke")
 	function, args := stub.GetFunctionAndParameters()
 	fmt.Println(function)
-
- 
 
 	if function == "invoke" {
 		// Make payment of X units from A to B
@@ -120,7 +114,6 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 // Transaction makes payment of X units from A to B
 func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string) pb.Response {
 
-
 	var X uint64          // Transaction value
 	var err error
 
@@ -131,10 +124,12 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 
     var DebitAccount, CreditAccount account
 
-   var requester string
+    var requester string
 
     creator, err  := stub.GetCreator()
-    n := bytes.Index(creator,[]byte("---"))
+    // la premiere partie correspond au mspip
+    // ne faudrait il pas prendre le tout ?
+    n := bytes.Index(creator,[]byte("---"))  
     ca := creator[n:]
     //fmt.Println(string(ca))
     if err == nil {
@@ -181,7 +176,7 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 
     if (DebitAccount.Name != "MPLBANK")  {
     	if (DebitAccount.Owner != requester) {
-    		return shim.Error("Sorry but you are not the owner of this account.  Transaction cancelled")
+    		return shim.Error("Sorry but you are not the owner of this debit account. Transaction cancelled")
     	}
     } 
 
