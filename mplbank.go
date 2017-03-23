@@ -54,7 +54,6 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	
   	_, args := stub.GetFunctionAndParameters()
     
-
 	var err error
 
 	if len(args) != 1 {
@@ -79,7 +78,6 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 	if err != nil {
 		return shim.Error(err.Error())
 	}
-    
 
 	return shim.Success(nil)
 }
@@ -136,16 +134,22 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
    var requester string
 
     creator, err  := stub.GetCreator()
-    if err != nil {
-    	block, _ := pem.Decode([]byte(creator))
-    	fmt.Println("failed to parse certificate PEM")
-    
-    	cert, err := x509.ParseCertificate(block.Bytes)
-    	if err != nil {
-    		fmt.Println("failed to parse certificate: " + err.Error())
+    n := bytes.Index(creator,[]byte("---"))
+    ca := creator[n:]
+    //fmt.Println(string(ca))
+    if err == nil {
+    	block, _ := pem.Decode(ca)
+    	if block == nil {
+	    	fmt.Println("failed to parse certificate PEM")
+	    	requester=""
+	    } else {
+    		cert, err := x509.ParseCertificate(block.Bytes)
+    		if err != nil {
+    			fmt.Println("failed to parse certificate: " + err.Error())
+    		}
+    		//fmt.Println(cert.Subject.CommonName)
+    		requester = cert.Subject.CommonName
     	}
-    	fmt.Println(cert.Subject.CommonName)
-    	requester = cert.Subject.CommonName
     }
 
 
