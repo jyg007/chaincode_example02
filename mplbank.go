@@ -142,7 +142,7 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
     		if err != nil {
     			fmt.Println("failed to parse certificate: " + err.Error())
     		}
-    		//fmt.Println(cert.Subject.CommonName)
+    		fmt.Println(cert.Subject.CommonName)
     		requester = cert.Subject.CommonName
     	}
     }
@@ -176,6 +176,8 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 
     if (DebitAccount.Name != "MPLBANK")  {
     	if (DebitAccount.Owner != requester) {
+    		fmt.Println(DebitAccount.Owner)
+    		fmt.Println(requester)
     		return shim.Error("Sorry but you are not the owner of this debit account. Transaction cancelled")
     	}
     } 
@@ -193,16 +195,15 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 		DebitAccount.TotalForDay = 0
 	}
 	
-
-
-	
-
 	CreditAccountbytes, err := stub.GetState(args[1])
 	if err != nil {
 		return shim.Error("Failed to get state for debut account")
 	}
 
 	if CreditAccountbytes == nil {
+		if (DebitAccount.Name != "MPLBANK")  {
+			return shim.Error("Only the bank can open an account")
+		}
 		fmt.Printf("ouverture de compte %s\n", args[1])
 		if ( X > 10000 ) {
 		       return shim.Error("Montant demandé trop important")
@@ -258,7 +259,7 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 	}
 	
 	
-	return shim.Success(nil)
+	return shim.Success([]byte("OK"))
 }
 
 // Deletes an entity from state
