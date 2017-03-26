@@ -213,6 +213,10 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 	    CreditAccount = account { args[1], 0, 0, MPLday, requester }
 
 	} else {
+		if (DebitAccount.Name == "MPLBANK") {
+			return shim.Error("Your account has already been credited by the bank")
+		}
+
     	err = json.Unmarshal([]byte(CreditAccountbytes), &CreditAccount)
 		if err != nil {
 			jsonResp := "{\"Error\":\"Failed to decode JSON of: " + args[1] + "\"}"
