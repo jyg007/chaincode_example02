@@ -97,6 +97,9 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
 	} else if function == "queryplafond" {
 		// the old "Query" is now implemtned in invoke
 		return t.queryplafond(stub, args)
+	} else if function == "gethistory" {
+		// the old "Query" is now implemtned in invoke
+		return t.getHistory(stub, args)
 	} else if function == "changeday" {
 		// the old "Query" is now implemtned in invoke
 		return t.changeday(stub)
@@ -432,6 +435,66 @@ func (t *SimpleChaincode) queryplafond(stub shim.ChaincodeStubInterface,args []s
 	return shim.Success([]byte(jsonResp))
 }
 
+
+func (t *SimpleChaincode) getHistory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
+
+	if len(args) < 1 {
+		return shim.Error("Incorrect number of arguments. Expecting 1")
+	}
+
+	account_target := args[0]
+
+	fmt.Printf("- start getHistory For Account: %s\n", account_target)
+
+	resultsIterator, err := stub.GetHistoryForKey(account_target)
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	defer resultsIterator.Close()
+
+	// buffer is a JSON array containing historic values for the marble
+	var buffer bytes.Buffer
+	var acc account
+
+	buffer.WriteString("{ \"history\" : [")
+
+	bArrayMemberAlreadyWritten := false
+	for resultsIterator.HasNext() {
+		txID, historicValue, err := resultsIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+		// Add a comma before array members, suppress it for the first array member
+		if bArrayMemberAlreadyWritten == true {
+			buffer.WriteString(",")
+		}
+		buffer.WriteString("{\"TxId\":")
+		buffer.WriteString("\"")
+		buffer.WriteString(txID)
+		buffer.WriteString("\"")
+
+		buffer.WriteString(", \"CurrentBalance\":")
+		// historicValue is a JSON marble, so we write as-is
+
+		err = json.Unmarshal(historicValue, &acc)
+		if err != nil {
+				return shim.Error("error to decode JSON")
+		}
+
+		buffer.WriteString("\"")
+		buffer.WriteString(strconv.FormatUint(acc.CurrentBalance,10))
+		buffer.WriteString("\"")
+		
+	//	buffer.WriteString(string(acc.CurrentBalance))
+		buffer.WriteString("}")
+		bArrayMemberAlreadyWritten = true
+	}
+	buffer.WriteString("] }")
+
+	//fmt.Printf("- getHistory returning:\n%s\n", buffer.String())
+
+	return shim.Success(buffer.Bytes())
+}
 
 
 func main() {
