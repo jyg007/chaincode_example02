@@ -336,7 +336,7 @@ func (t *SimpleChaincode) getaccounts(stub shim.ChaincodeStubInterface) pb.Respo
 	}
 	defer resultsIterator.Close()
 
-	match, _ := regexp.Compile("MPLBANK")
+	match, _ := regexp.Compile("MPLBANK|owner~name")
 
 	// buffer is a JSON array containing QueryResults
 	var buffer bytes.Buffer
@@ -522,7 +522,7 @@ func (t *SimpleChaincode) getaccountsbyowner(stub shim.ChaincodeStubInterface, o
 	}
 	defer ResultsIterator.Close()
 
-	// Iterate through result set and for each marble found, transfer to newOwner
+	// Iterate through result set and for 
 	var i int
 	var buffer bytes.Buffer
 	buffer.WriteString("[")
@@ -541,7 +541,7 @@ func (t *SimpleChaincode) getaccountsbyowner(stub shim.ChaincodeStubInterface, o
 		}
 
 		returnedAccountName := compositeKeyParts[1]
-		fmt.Printf("- found an account  from index:%s name:%s\n", objectType, returnedAccountName)
+	//	fmt.Printf("- found an account  from index:%s name:%s\n", objectType, returnedAccountName)
 
 		if bArrayMemberAlreadyWritten == true {
 			buffer.WriteString(",")
@@ -556,12 +556,9 @@ func (t *SimpleChaincode) getaccountsbyowner(stub shim.ChaincodeStubInterface, o
 
 	buffer.WriteString("]")
 
-	fmt.Printf("-  queryResult:\n%s\n", buffer.String())
+	fmt.Printf("queryResult:\n%s\n", buffer.String())
 
 	return shim.Success(buffer.Bytes())
-	//responsePayload := fmt.Sprintf("Transferred %d %s marbles to %s", i, color, newOwner)
-	//fmt.Println("- end transferMarblesBasedOnColor: " + responsePayload)
-	//return shim.Success([]byte(responsePayload))
 
 }
 
