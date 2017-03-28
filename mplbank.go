@@ -35,7 +35,7 @@ type SimpleChaincode struct {
 }
 
 type account struct {
-//	ObjectType string `json:"docType"` //docType is used to distinguish the various types of objects in state database
+	ObjectType        string `json:"docType"` //docType is used to distinguish the various types of objects in state database
 	Name       		  string `json:"name"`    //the fieldtags are needed to keep case from bouncing around
     CurrentBalance    uint64 `json:"currentbalance"`
 	TotalForDay       uint64 `json:"totalforday"`
@@ -56,7 +56,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 	// Creation of MPLBANK
 	i, _ := strconv.ParseUint(args[0],10,64)
-    bank := &account { "MPLBANK", i , 0, 0,  "jyg" }
+    bank := &account { "ACCOUNT", "MPLBANK", i , 0, 0,  "jyg" }
 
     bankJSONasBytes, err := json.Marshal(bank)
 	if err != nil {
@@ -68,6 +68,14 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 		return shim.Error(err.Error())
 	}
   
+    indexName := "owner~name"
+	OwnerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{bank.Owner, bank.Name})
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	
+	value := []byte{0x00}
+	stub.PutState(OwnerNameIndexKey, value)
 
 
     err = stub.PutState("MPLBANK_DAY", []byte("0"))
@@ -81,53 +89,12 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
 
 
 func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
-	//fmt.Println("ex02 Invoke")
+
 	function, args := stub.GetFunctionAndParameters()
-	fmt.Println(function)
-
-	if function == "invoke" {
-		// Make payment of X units from A to B
-		return t.invoke(stub, args)
-	} else if function == "delete" {
-		// Deletes an entity from its state
-		return t.delete(stub, args)
-	} else if function == "query" {
-		// the old "Query" is now implemtned in invoke
-		return t.query(stub, args)
-	} else if function == "queryplafond" {
-		// the old "Query" is now implemtned in invoke
-		return t.queryplafond(stub, args)
-	} else if function == "gethistory" {
-		// the old "Query" is now implemtned in invoke
-		return t.getHistory(stub, args)
-	} else if function == "changeday" {
-		// the old "Query" is now implemtned in invoke
-		return t.changeday(stub)
-	} else if function == "getaccounts" {
-		// the old "Query" is now implemtned in invoke
-		return t.getaccounts(stub)
-	}
+	fmt.Println(function,args)
 
 
-	return shim.Error("Invalid invoke function name. Expecting \"invoke\" \"delete\" \"query\"")
-}
-
-
-
-// Transaction makes payment of X units from A to B
-func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string) pb.Response {
-
-	var X uint64          // Transaction value
-	var err error
-
-
-	if len(args) != 3 {
-		return shim.Error("Incorrect number of arguments. Expecting 3")
-	}
-
-    var DebitAccount, CreditAccount account
-
-    var requester string
+   var requester string
 
     creator, err  := stub.GetCreator()
     // la premiere partie correspond au mspip
@@ -150,9 +117,50 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
     	}
     }
 
+	if function == "invoke" {
+		// Make payment of X units from A to B
+		return t.invoke(stub, args, requester)
+	} else if function == "delete" {
+		// Deletes an entity from its state
+		return t.delete(stub, args)
+	} else if function == "query" {
+		// the old "Query" is now implemtned in invoke
+		return t.query(stub, args)
+	} else if function == "queryplafond" {
+		// the old "Query" is now implemtned in invoke
+		return t.queryplafond(stub, args)
+	} else if function == "gethistory" {
+		// the old "Query" is now implemtned in invoke
+		return t.getHistory(stub, args)
+	} else if function == "getaccountsbyowner" {
+		// the old "Query" is now implemtned in invoke
+		return t.getaccountsbyowner(stub, requester)
+	} else if function == "changeday" {
+		// the old "Query" is now implemtned in invoke
+		return t.changeday(stub)
+	} else if function == "getaccounts" {
+		// the old "Query" is now implemtned in invoke
+		return t.getaccounts(stub)
+	}
 
-  
-	
+
+	return shim.Error("Invalid invoke function name")
+}
+
+
+
+// Transaction makes payment of X units from A to B
+func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string, requester string) pb.Response {
+
+	var X uint64          // Transaction value
+	var err error
+
+	if len(args) != 3 {
+		return shim.Error("Incorrect number of arguments. Expecting 3")
+	}
+
+    var DebitAccount, CreditAccount account
+  	
 	// Perform the execution
 	X, err = strconv.ParseUint(args[2],10,64)
 	if err != nil {
@@ -212,8 +220,18 @@ func (t *SimpleChaincode) invoke(stub shim.ChaincodeStubInterface,args []string)
 		       return shim.Error("Montant demandé trop important")
 		};
 
-        // jyg à remplacer par creator
-	    CreditAccount = account { args[1], 0, 0, MPLday, requester }
+        
+	    CreditAccount = account { "ACCOUNT", args[1], 0, 0, MPLday, requester }
+
+	    indexName := "owner~name"
+		OwnerNameIndexKey, err := stub.CreateCompositeKey(indexName, []string{CreditAccount.Owner, CreditAccount.Name})
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+	
+		value := []byte{0x00}
+		stub.PutState(OwnerNameIndexKey, value)
+
 
 	} else {
 		if (DebitAccount.Name == "MPLBANK") {
@@ -495,6 +513,59 @@ func (t *SimpleChaincode) getHistory(stub shim.ChaincodeStubInterface, args []st
 
 	return shim.Success(buffer.Bytes())
 }
+
+func (t *SimpleChaincode) getaccountsbyowner(stub shim.ChaincodeStubInterface, owner string) pb.Response {
+
+	ResultsIterator, err := stub.GetStateByPartialCompositeKey("owner~name", []string{owner})
+	if err != nil {
+		return shim.Error(err.Error())
+	}
+	defer ResultsIterator.Close()
+
+	// Iterate through result set and for each marble found, transfer to newOwner
+	var i int
+	var buffer bytes.Buffer
+	buffer.WriteString("[")
+	bArrayMemberAlreadyWritten := false
+	for i = 0; ResultsIterator.HasNext(); i++ {
+		// Note that we don't get the value (2nd return variable), we'll just get the marble name from the composite key
+		colorNameKey, _, err := ResultsIterator.Next()
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		// get the color and name from color~name composite key
+		objectType, compositeKeyParts, err := stub.SplitCompositeKey(colorNameKey)
+		if err != nil {
+			return shim.Error(err.Error())
+		}
+
+		returnedAccountName := compositeKeyParts[1]
+		fmt.Printf("- found an account  from index:%s name:%s\n", objectType, returnedAccountName)
+
+		if bArrayMemberAlreadyWritten == true {
+			buffer.WriteString(",")
+		}
+		buffer.WriteString("\"")
+		buffer.WriteString(returnedAccountName)
+		buffer.WriteString("\"")
+
+		bArrayMemberAlreadyWritten = true
+		
+	}
+
+	buffer.WriteString("]")
+
+	fmt.Printf("-  queryResult:\n%s\n", buffer.String())
+
+	return shim.Success(buffer.Bytes())
+	//responsePayload := fmt.Sprintf("Transferred %d %s marbles to %s", i, color, newOwner)
+	//fmt.Println("- end transferMarblesBasedOnColor: " + responsePayload)
+	//return shim.Success([]byte(responsePayload))
+
+}
+
+
 
 
 func main() {
