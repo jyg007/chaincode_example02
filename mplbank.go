@@ -529,13 +529,13 @@ func (t *SimpleChaincode) getaccountsbyowner(stub shim.ChaincodeStubInterface, o
 	bArrayMemberAlreadyWritten := false
 	for i = 0; ResultsIterator.HasNext(); i++ {
 		// Note that we don't get the value (2nd return variable), we'll just get the marble name from the composite key
-		colorNameKey, _, err := ResultsIterator.Next()
+		NameKey, _, err := ResultsIterator.Next()
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 
 		// get the color and name from color~name composite key
-		objectType, compositeKeyParts, err := stub.SplitCompositeKey(colorNameKey)
+		_, compositeKeyParts, err := stub.SplitCompositeKey(NameKey)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
