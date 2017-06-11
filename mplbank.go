@@ -345,24 +345,24 @@ func (t *SimpleChaincode) getaccounts(stub shim.ChaincodeStubInterface) pb.Respo
 	bArrayMemberAlreadyWritten := false
 	for resultsIterator.HasNext() {
 	//	queryResultKey, queryResultValue, err := resultsIterator.Next()
-		queryResultKey, _ , err := resultsIterator.Next()
+		queryResultKey,  err := resultsIterator.Next()
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 
-		if (!match.MatchString(queryResultKey)) {
+		if (!match.MatchString(queryResultKey.Key)) {
 		// Add a comma before array members, suppress it for the first array member
 		if bArrayMemberAlreadyWritten == true {
 			buffer.WriteString(",")
 		}
 	//	buffer.WriteString("{\"Key\":")
 		buffer.WriteString("\"")
-		buffer.WriteString(queryResultKey)
+		buffer.WriteString(queryResultKey.Key)
 		buffer.WriteString("\"")
 
 	//	buffer.WriteString(", \"Record\":")
 		// Record is a JSON object, so we write as-is
-	//	buffer.WriteString(string(queryResultValue))
+	//	buffer.WriteString(string(queryResultKey.Value))
 	//	buffer.WriteString("}")
 		bArrayMemberAlreadyWritten = true
 		}
@@ -478,7 +478,7 @@ func (t *SimpleChaincode) getHistory(stub shim.ChaincodeStubInterface, args []st
 
 	bArrayMemberAlreadyWritten := false
 	for resultsIterator.HasNext() {
-		txID, historicValue, err := resultsIterator.Next()
+		historicValue, err := resultsIterator.Next()
 		if err != nil {
 			return shim.Error(err.Error())
 		}
@@ -488,13 +488,13 @@ func (t *SimpleChaincode) getHistory(stub shim.ChaincodeStubInterface, args []st
 		}
 		buffer.WriteString("{\"TxId\":")
 		buffer.WriteString("\"")
-		buffer.WriteString(txID)
+		buffer.WriteString(historicValue.TxId)
 		buffer.WriteString("\"")
 
 		buffer.WriteString(", \"CurrentBalance\":")
 		// historicValue is a JSON marble, so we write as-is
 
-		err = json.Unmarshal(historicValue, &acc)
+		err = json.Unmarshal(historicValue.Value, &acc)
 		if err != nil {
 				return shim.Error("error to decode JSON")
 		}
@@ -529,13 +529,13 @@ func (t *SimpleChaincode) getaccountsbyowner(stub shim.ChaincodeStubInterface, o
 	bArrayMemberAlreadyWritten := false
 	for i = 0; ResultsIterator.HasNext(); i++ {
 		// Note that we don't get the value (2nd return variable), we'll just get the marble name from the composite key
-		NameKey, _, err := ResultsIterator.Next()
+		NameKey,  err := ResultsIterator.Next()
 		if err != nil {
 			return shim.Error(err.Error())
 		}
 
 		// get the color and name from color~name composite key
-		_, compositeKeyParts, err := stub.SplitCompositeKey(NameKey)
+		_, compositeKeyParts, err := stub.SplitCompositeKey(NameKey.Key)
 		if err != nil {
 			return shim.Error(err.Error())
 		}
