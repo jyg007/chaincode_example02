@@ -117,7 +117,7 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.Response {
     	}
     }
 
-	if function == "invoke" {
+	if function == "move" {
 		// Make payment of X units from A to B
 		return t.invoke(stub, args, requester)
 	} else if function == "delete" {
